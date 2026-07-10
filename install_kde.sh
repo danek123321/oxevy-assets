@@ -91,7 +91,7 @@ if [ "$LAST_EXIT_CODE" -ne 0 ]; then
     fi
 fi
 
-PACKAGES="plasma-desktop sddm dbus elogind frameworkintegration konsole dolphin mesa-dri xorg-fonts virtualbox-ose-guest virtualbox-ose-guest-dkms"
+PACKAGES="kde-plasma kde-baseapps sddm dbus elogind mesa-dri xorg-fonts xorg-minimal virtualbox-ose-guest virtualbox-ose-guest-dkms"
 
 # --- Wybór serwera wyświetlania ---
 DISPLAY_CHOICE=$(dialog --backtitle "$BACKTITLE" \
@@ -108,10 +108,10 @@ if [ -z "$DISPLAY_CHOICE" ]; then
 fi
 
 if [ "$DISPLAY_CHOICE" == "1" ]; then
-    PACKAGES="$PACKAGES xorg-minimal qt6-wayland xorg-server-xwayland"
+    PACKAGES="$PACKAGES qt6-wayland xorg-server-xwayland"
     DISPLAY_LABEL="Wayland"
 else
-    PACKAGES="$PACKAGES xorg plasma-x11"
+    PACKAGES="$PACKAGES xorg"
     DISPLAY_LABEL="X11 (Xorg)"
 fi
 
@@ -156,7 +156,7 @@ fi
 
 # Weryfikacja, że kluczowe pakiety faktycznie się zainstalowały
 MISSING=""
-for PKG in plasma-desktop sddm dbus elogind; do
+for PKG in kde-plasma sddm dbus elogind; do
     xbps-query -l 2>/dev/null | grep -q " $PKG-" || MISSING="$MISSING $PKG"
 done
 
