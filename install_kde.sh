@@ -4,7 +4,19 @@
 # Stylizowany na oryginalny void-installer (dialog/ncurses)
 #
 
-BACKTITLE="Void Linux KDE Plasma Installer"
+# ============================================================
+#  KONFIGURACJA SAMO-AKTUALIZACJI
+#  Podmień SCRIPT_URL na surowy (raw) link do tego pliku
+#  (np. hostowany na GitHub/Gist), żeby skrypt sam się
+#  aktualizował przy każdym uruchomieniu.
+#  Jeśli zostawisz puste, sprawdzanie aktualizacji zostanie
+#  pominięte.
+# ============================================================
+SCRIPT_VERSION="1.3.0"
+SCRIPT_URL="https://raw.githubusercontent.com/TWOJ-USER/TWOJE-REPO/main/kde-installer.sh"
+SCRIPT_PATH="$(readlink -f "$0")"
+
+BACKTITLE="Void Linux KDE Plasma Installer v${SCRIPT_VERSION}"
 TMPFILE=$(mktemp)
 EXITCODE_FILE=$(mktemp)
 
@@ -59,10 +71,63 @@ show_error_log() {
     dialog --backtitle "$BACKTITLE" --title "$TITLE" --textbox "$TMPFILE" 20 75
 }
 
+# ============================================================
+#  SAMOAKTUALIZACJA
+#  Pobiera zdalną wersję skryptu, porównuje SCRIPT_VERSION,
+#  i jeśli jest nowsza, podmienia plik i uruchamia się od nowa.
+# ============================================================
+check_for_updates() {
+    # Pomiń jeśli URL nie został skonfigurowany
+    case "$SCRIPT_URL" in
+        *TWOJ-USER*|"") return 0 ;;
+    esac
+
+    # Pobierz zdalny plik do tymczasowej lokalizacji (ciche niepowodzenie = brak sieci)
+    local REMOTE_TMP
+    REMOTE_TMP=$(mktemp)
+    if ! curl -fsSL --max-time 8 "$SCRIPT_URL" -o "$REMOTE_TMP" 2>/dev/null; then
+        rm -f "$REMOTE_TMP"
+        return 0
+    fi
+
+    local REMOTE_VERSION
+    REMOTE_VERSION=$(grep -m1 '^SCRIPT_VERSION=' "$REMOTE_TMP" | cut -d'"' -f2)
+
+    if [ -z "$REMOTE_VERSION" ] || [ "$REMOTE_VERSION" == "$SCRIPT_VERSION" ]; then
+        rm -f "$REMOTE_TMP"
+        return 0
+    fi
+
+    # Prosta weryfikacja że plik wygląda jak nasz skrypt (zawiera BACKTITLE)
+    if ! grep -q "Void Linux KDE Plasma Installer" "$REMOTE_TMP"; then
+        rm -f "$REMOTE_TMP"
+        return 0
+    fi
+
+    dialog --backtitle "$BACKTITLE" --title " Dostępna aktualizacja " \
+        --yesno "\nZnaleziono nowszą wersję skryptu:\n\nObecna: $SCRIPT_VERSION\nDostępna: $REMOTE_VERSION\n\nCzy chcesz zaktualizować i uruchomić nową wersję teraz?" 13 65
+
+    if [ $? -eq 0 ]; then
+        chmod +x "$REMOTE_TMP"
+        if cp "$REMOTE_TMP" "$SCRIPT_PATH" 2>/dev/null; then
+            rm -f "$REMOTE_TMP"
+            clear
+            echo "Zaktualizowano do wersji $REMOTE_VERSION. Uruchamiam ponownie..."
+            exec bash "$SCRIPT_PATH" "$@"
+        else
+            dialog --backtitle "$BACKTITLE" --title " Błąd aktualizacji " \
+                --msgbox "\nNie udało się nadpisać pliku skryptu (brak uprawnień do zapisu?).\nKontynuuję ze starą wersją." 10 60
+        fi
+    fi
+    rm -f "$REMOTE_TMP"
+}
+
+check_for_updates "$@"
+
 # --- Ekran powitalny ---
 dialog --backtitle "$BACKTITLE" \
     --title " Witamy " \
-    --msgbox "\nTen kreator zainstaluje środowisko graficzne KDE Plasma na Twoim systemie Void Linux.\n\nUżyj strzałek i TAB do nawigacji, ENTER aby zatwierdzić." 12 65
+    --msgbox "\nTen kreator zainstaluje środowisko graficzne KDE Plasma na Twoim systemie Void Linux.\n\nWersja skryptu: $SCRIPT_VERSION\n\nUżyj strzałek i TAB do nawigacji, ENTER aby zatwierdzić." 13 65
 
 # --- Sprawdzenie połączenia z internetem PRZED czymkolwiek innym ---
 run_with_gauge "Sprawdzanie połączenia z internetem..." bash -c '
@@ -115,26 +180,91 @@ else
     DISPLAY_LABEL="X11 (Xorg)"
 fi
 
-# --- Wybór pakietów opcjonalnych (checklista jak w void-installer) ---
-EXTRA_CHOICES=$(dialog --backtitle "$BACKTITLE" \
-    --title " Pakiety opcjonalne " \
-    --checklist "\nZaznacz spacją pakiety, które chcesz zainstalować:" 14 65 2 \
-    "firefox" "Przeglądarka internetowa Firefox" off \
-    "tools" "Podstawowe narzędzia (git, curl, fish, fastfetch)" off \
+# ============================================================
+#  WYBÓR APLIKACJI (checklisty pogrupowane tematycznie)
+# ============================================================
+
+# --- Grupa 1: Przeglądarki ---
+BROWSER_CHOICES=$(dialog --backtitle "$BACKTITLE" \
+    --title " Przeglądarki internetowe " \
+    --checklist "\nZaznacz spacją przeglądarki do zainstalowania:" 14 65 3 \
+    "firefox" "Mozilla Firefox" off \
+    "chromium" "Chromium (open-source baza Chrome)" off \
+    "brave" "Brave Browser" off \
     3>&1 1>&2 2>&3)
 
-for CHOICE in $EXTRA_CHOICES; do
+for CHOICE in $BROWSER_CHOICES; do
     CHOICE=$(echo "$CHOICE" | tr -d '"')
     case "$CHOICE" in
         firefox) PACKAGES="$PACKAGES firefox" ;;
-        tools) PACKAGES="$PACKAGES git curl fish fastfetch" ;;
+        chromium) PACKAGES="$PACKAGES chromium" ;;
+        brave) PACKAGES="$PACKAGES brave" ;;
     esac
 done
+
+# --- Grupa 2: Multimedia ---
+MEDIA_CHOICES=$(dialog --backtitle "$BACKTITLE" \
+    --title " Aplikacje multimedialne " \
+    --checklist "\nZaznacz spacją aplikacje multimedialne:" 14 65 3 \
+    "vlc" "VLC Media Player" off \
+    "mpv" "mpv (lekki odtwarzacz wideo)" off \
+    "gimp" "GIMP (edytor grafiki)" off \
+    3>&1 1>&2 2>&3)
+
+for CHOICE in $MEDIA_CHOICES; do
+    CHOICE=$(echo "$CHOICE" | tr -d '"')
+    case "$CHOICE" in
+        vlc) PACKAGES="$PACKAGES vlc" ;;
+        mpv) PACKAGES="$PACKAGES mpv" ;;
+        gimp) PACKAGES="$PACKAGES gimp" ;;
+    esac
+done
+
+# --- Grupa 3: Biuro i komunikacja ---
+OFFICE_CHOICES=$(dialog --backtitle "$BACKTITLE" \
+    --title " Biuro i komunikacja " \
+    --checklist "\nZaznacz spacją aplikacje biurowe/komunikacyjne:" 14 65 2 \
+    "libreoffice" "LibreOffice (pakiet biurowy)" off \
+    "telegram" "Telegram Desktop" off \
+    3>&1 1>&2 2>&3)
+
+for CHOICE in $OFFICE_CHOICES; do
+    CHOICE=$(echo "$CHOICE" | tr -d '"')
+    case "$CHOICE" in
+        libreoffice) PACKAGES="$PACKAGES libreoffice" ;;
+        telegram) PACKAGES="$PACKAGES telegram-desktop" ;;
+    esac
+done
+
+# --- Grupa 4: Narzędzia systemowe ---
+TOOLS_CHOICES=$(dialog --backtitle "$BACKTITLE" \
+    --title " Narzędzia systemowe " \
+    --checklist "\nZaznacz spacją narzędzia do zainstalowania:" 15 65 5 \
+    "git" "System kontroli wersji Git" off \
+    "fish" "Powłoka Fish (fish-shell)" off \
+    "fastfetch" "fastfetch (info o systemie)" off \
+    "htop" "htop (monitor procesów)" off \
+    "flatpak" "Flatpak (dodatkowy menadżer aplikacji)" off \
+    3>&1 1>&2 2>&3)
+
+for CHOICE in $TOOLS_CHOICES; do
+    CHOICE=$(echo "$CHOICE" | tr -d '"')
+    case "$CHOICE" in
+        git) PACKAGES="$PACKAGES git" ;;
+        fish) PACKAGES="$PACKAGES fish-shell" ;;
+        fastfetch) PACKAGES="$PACKAGES fastfetch" ;;
+        htop) PACKAGES="$PACKAGES htop" ;;
+        flatpak) PACKAGES="$PACKAGES flatpak" ;;
+    esac
+done
+
+# Usuń ewentualne duplikaty na liście pakietów (np. jeśli coś jest już w bazie)
+PACKAGES=$(echo "$PACKAGES" | tr ' ' '\n' | awk '!seen[$0]++' | tr '\n' ' ')
 
 # --- Podsumowanie / potwierdzenie ---
 dialog --backtitle "$BACKTITLE" \
     --title " Podsumowanie instalacji " \
-    --yesno "\nSerwer graficzny: $DISPLAY_LABEL\n\nPakiety do zainstalowania:\n$PACKAGES\n\nCzy chcesz kontynuować instalację?" 16 70
+    --yesno "\nSerwer graficzny: $DISPLAY_LABEL\n\nPakiety do zainstalowania:\n$PACKAGES\n\nCzy chcesz kontynuować instalację?" 18 70
 
 if [ $? -ne 0 ]; then
     clear
