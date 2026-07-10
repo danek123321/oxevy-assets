@@ -108,7 +108,7 @@ if [ -z "$DISPLAY_CHOICE" ]; then
 fi
 
 if [ "$DISPLAY_CHOICE" == "1" ]; then
-    PACKAGES="$PACKAGES xorg-minimal qt6-wayland xwayland"
+    PACKAGES="$PACKAGES xorg-minimal qt6-wayland xorg-server-xwayland"
     DISPLAY_LABEL="Wayland"
 else
     PACKAGES="$PACKAGES xorg plasma-x11"
