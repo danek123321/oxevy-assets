@@ -7,9 +7,20 @@
 #
 
 # ============================================================
+#  ZABEZPIECZENIE POWŁOKI / SHELL GUARD
+# ============================================================
+if [ -z "$BASH_VERSION" ]; then
+    echo "Błąd/Error: Ten skrypt wymaga powłoki Bash."
+    echo "Error: This script requires Bash shell."
+    echo ""
+    echo "Uruchom używając / Run using: sudo bash $0"
+    exit 1
+fi
+
+# ============================================================
 #  KONFIGURACJA SAMO-AKTUALIZACJI / SELF-UPDATE CONFIG
 # ============================================================
-SCRIPT_VERSION="4.2.0"
+SCRIPT_VERSION="4.2.1"
 SCRIPT_URL="https://raw.githubusercontent.com/TWOJ-USER/TWOJE-REPO/main/desktop-installer.sh"
 SCRIPT_PATH="$(readlink -f "$0")"
 
@@ -34,7 +45,7 @@ t() {
 }
 
 if [ "$EUID" -ne 0 ]; then
-    echo "Blad/Error: uruchom przez sudo / run with sudo"
+    echo "Blad/Error: uruchom przez sudo / run with sudo (sudo bash $0)"
     exit 1
 fi
 
@@ -64,6 +75,7 @@ detect_distro() {
     fi
 }
 detect_distro
+export DISTRO_FAMILY INIT_SYSTEM DISTRO_NAME
 
 # ============================================================
 #  ABSTRAKCJA NAZW PAKIETOW
@@ -479,7 +491,7 @@ if [ "$DE_KEY" == "hyprland" ]; then
                 pkg_install git >/dev/null 2>&1
             fi
 
-            TARGET_USER=${SUDO_USER:-$USER}
+            TARGET_USER=${SUDO_USER:-${USER:-root}}
             TARGET_HOME=$(getent passwd "$TARGET_USER" | cut -d: -f6)
             TMP_DOTFILES=$(mktemp -d)
 
