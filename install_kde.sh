@@ -1,8 +1,3 @@
-Oto zaktualizowana wersja skryptu. Dodałem logikę, która po wybraniu i zainstalowaniu środowiska **Hyprland** pyta użytkownika, czy chce pobrać i zastosować konfigurację (dots) z repozytorium `caelestia-dots/shell`. 
-
-Jeśli użytkownik się zgodzi, skrypt automatycznie zainstaluje `git` (jeśli go brakuje), sklonuje repozytorium i spróbuje uruchomić dołączony do niego skrypt instalacyjny jako docelowy użytkownik (twórca repozytorium zazwyczaj udostępnia automatyczny skrypt `setup.sh` lub `install.sh`).
-
-```bash
 #!/bin/bash
 #
 # Uniwersalny instalator Środowisk Graficznych (Void / Arch / Debian-Ubuntu / Fedora)
@@ -538,4 +533,3 @@ fastfetch 2>/dev/null || true
 echo "$(t 'Restart za 5 sekund...' 'Rebooting in 5 seconds...')"
 sleep 5
 reboot
-```
