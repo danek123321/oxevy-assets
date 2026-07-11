@@ -20,7 +20,7 @@ fi
 # ============================================================
 #  KONFIGURACJA SAMO-AKTUALIZACJI / SELF-UPDATE CONFIG
 # ============================================================
-SCRIPT_VERSION="4.2.1"
+SCRIPT_VERSION="5.0.0"
 SCRIPT_URL="https://raw.githubusercontent.com/TWOJ-USER/TWOJE-REPO/main/desktop-installer.sh"
 SCRIPT_PATH="$(readlink -f "$0")"
 
@@ -87,11 +87,12 @@ pkgname() {
             case "$key" in
                 kde) echo "kde-plasma kde-baseapps" ;; gnome) echo "gnome" ;; xfce) echo "xfce4 xfce4-goodies" ;;
                 lxqt) echo "lxqt" ;; mate) echo "mate" ;; cinnamon) echo "cinnamon" ;;
-                hyprland) echo "hyprland kitty waybar wofi" ;;
+                # Hyprland nie jest w domyślnych repozytoriach Voida
+                hyprland) echo "" ;;
                 sddm) echo "sddm" ;; gdm) echo "gdm" ;; lightdm) echo "lightdm lightdm-gtk3-greeter" ;;
                 dbus) echo "dbus" ;; elogind) echo "elogind" ;; mesa) echo "mesa-dri" ;;
                 xorgfonts) echo "xorg-fonts" ;; xorgminimal) echo "xorg-minimal" ;; xorgfull) echo "xorg" ;;
-                vbox) echo "virtualbox-ose-guest virtualbox-ose-guest-dkms" ;;
+                vbox) echo "virtualbox-ose-guest" ;;
                 qtwayland) echo "qt6-wayland" ;; xwayland) echo "xorg-server-xwayland" ;;
                 firefox) echo "firefox" ;; chromium) echo "chromium" ;; tor) echo "torbrowser-launcher" ;;
                 vlc) echo "vlc" ;; mpv) echo "mpv" ;; gimp) echo "gimp" ;; blender) echo "blender" ;;
@@ -129,7 +130,8 @@ pkgname() {
             case "$key" in
                 kde) echo "kde-plasma-desktop" ;; gnome) echo "gnome-core" ;; xfce) echo "xfce4" ;;
                 lxqt) echo "lxqt" ;; mate) echo "mate-desktop-environment" ;; cinnamon) echo "cinnamon-desktop-environment" ;;
-                hyprland) echo "hyprland kitty waybar wofi" ;;
+                # Hyprland nie jest w domyślnych repozytoriach Debiana/Ubuntu
+                hyprland) echo "" ;;
                 sddm) echo "sddm" ;; gdm) echo "gdm3" ;; lightdm) echo "lightdm lightdm-gtk-greeter" ;;
                 dbus) echo "dbus" ;; elogind) echo "" ;; mesa) echo "libgl1-mesa-dri" ;;
                 xorgfonts) echo "xfonts-base" ;; xorgminimal) echo "xserver-xorg-core" ;; xorgfull) echo "xserver-xorg" ;;
@@ -184,14 +186,29 @@ pkg_bootstrap() {
 
 pkg_sync() {
     case "$DISTRO_FAMILY" in
-        void) xbps-install -Sy ;; arch) pacman -Sy --noconfirm ;; debian) apt-get update ;; fedora) dnf makecache ;;
+        void) 
+            # Włączenie repozytoriów nonfree i multilib dla Void (wymagane dla steam, discord, niektórych sterowników)
+            xbps-install -Sy void-repo-nonfree void-repo-multilib void-repo-nonfree-multilib >/dev/null 2>&1
+            xbps-install -Sy 
+            ;;
+        arch) pacman -Sy --noconfirm ;; 
+        debian) apt-get update ;; 
+        fedora) dnf makecache ;;
     esac
 }
 
 pkg_install() {
     case "$DISTRO_FAMILY" in
-        void) xbps-install -y "$@" ;; arch) pacman -S --noconfirm --needed "$@" ;;
-        debian) DEBIAN_FRONTEND=noninteractive apt-get install -y "$@" ;; fedora) dnf install -y "$@" ;;
+        void) 
+            # Void przerywa instalację całej listy jeśli jeden pakiet już jest zainstalowany lub nie istnieje.
+            # Instalujemy w pętli, aby zignorować te błędy i zainstalować resztę.
+            for p in "$@"; do
+                xbps-install -y "$p" >/dev/null 2>&1
+            done
+            ;;
+        arch) pacman -S --noconfirm --needed "$@" >/dev/null 2>&1 ;;
+        debian) DEBIAN_FRONTEND=noninteractive apt-get install -y "$@" >/dev/null 2>&1 ;;
+        fedora) dnf install -y "$@" >/dev/null 2>&1 ;;
     esac
 }
 
@@ -316,6 +333,13 @@ case "$DE_CHOICE" in
     7) DE_KEY="hyprland"; DM_KEY="sddm"; DE_LABEL="Hyprland" ;;
 esac
 
+# Sprawdzenie dostępności Hyprlanda na danym systemie
+if [ "$DE_KEY" == "hyprland" ] && [ -z "$(pkgname hyprland)" ]; then
+    dialog --backtitle "$BACKTITLE" --title " $(t 'Niedostępne' 'Unavailable') " \
+        --msgbox "\n$(t "Hyprland nie jest dostępny w domyślnych repozytoriach tego systemu ($DISTRO_NAME).\nMożesz go zainstalować ręcznie z AUR lub źródeł." "Hyprland is not available in the default repositories of this system ($DISTRO_NAME).\nYou can install it manually from AUR or sources.")" 12 65
+    clear; exit 1
+fi
+
 # ============================================================
 #  BUDOWA LISTY PAKIETOW i WYBÓR APLIKACJI (HUB MENU)
 # ============================================================
@@ -439,7 +463,9 @@ if [ $? -ne 0 ]; then clear; echo "$(t 'Anulowano.' 'Cancelled.')"; exit 1; fi
 
 run_with_gauge "$(t 'Instalowanie pakietów, proszę czekać...' 'Installing packages, please wait...')" bash -c "$(declare -f pkg_install); pkg_install $PACKAGES"
 
-if [ "$LAST_EXIT_CODE" -ne 0 ]; then
+# Ponieważ Void instaluje w pętli i zawsze zwraca 0, liczymy na weryfikację niżej.
+# Dla Arch/Deb/Fedora sprawdzamy kod błędu:
+if [ "$DISTRO_FAMILY" != "void" ] && [ "$LAST_EXIT_CODE" -ne 0 ]; then
     show_error_log " $(t 'Błąd instalacji' 'Installation error') "
     dialog --backtitle "$BACKTITLE" --title " $(t 'Błąd' 'Error') " \
         --msgbox "\n$(t "Instalacja pakietów nie powiodła się (kod: $LAST_EXIT_CODE)." "Package installation failed (exit code: $LAST_EXIT_CODE).")\n\n$(t "Zobacz log powyżej." "See the log above.")" 12 65
