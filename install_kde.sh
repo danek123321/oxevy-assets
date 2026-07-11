@@ -1,6 +1,7 @@
+
 #!/bin/bash
 #
-# Uniwersalny instalator Środowisk Graficznych (Void / Arch / Debian-Ubuntu / Fedora)
+# Uniwersalny instalator / deinstalator Środowisk Graficznych (Void / Arch / Debian-Ubuntu / Fedora)
 # Wsparcie: KDE Plasma, GNOME, XFCE, LXQt, MATE, Cinnamon, Hyprland
 # Stylizowany na archinstall (dialog/ncurses)
 # Obsluga jezykow: polski / english
@@ -20,7 +21,7 @@ fi
 # ============================================================
 #  KONFIGURACJA SAMO-AKTUALIZACJI / SELF-UPDATE CONFIG
 # ============================================================
-SCRIPT_VERSION="5.0.0"
+SCRIPT_VERSION="6.0.0"
 SCRIPT_URL="https://raw.githubusercontent.com/TWOJ-USER/TWOJE-REPO/main/desktop-installer.sh"
 SCRIPT_PATH="$(readlink -f "$0")"
 
@@ -87,8 +88,7 @@ pkgname() {
             case "$key" in
                 kde) echo "kde-plasma kde-baseapps" ;; gnome) echo "gnome" ;; xfce) echo "xfce4 xfce4-goodies" ;;
                 lxqt) echo "lxqt" ;; mate) echo "mate" ;; cinnamon) echo "cinnamon" ;;
-                # Hyprland nie jest w domyślnych repozytoriach Voida
-                hyprland) echo "" ;;
+                hyprland) echo "" ;; # Wymaga AUR/źródeł na Void
                 sddm) echo "sddm" ;; gdm) echo "gdm" ;; lightdm) echo "lightdm lightdm-gtk3-greeter" ;;
                 dbus) echo "dbus" ;; elogind) echo "elogind" ;; mesa) echo "mesa-dri" ;;
                 xorgfonts) echo "xorg-fonts" ;; xorgminimal) echo "xorg-minimal" ;; xorgfull) echo "xorg" ;;
@@ -103,7 +103,7 @@ pkgname() {
                 neovim) echo "neovim" ;; docker) echo "docker" ;; python3) echo "python3" ;;
                 btop) echo "btop" ;; tmux) echo "tmux" ;; ranger) echo "ranger" ;; flatpak) echo "flatpak" ;;
                 build_tools) echo "base-devel" ;;
-                steam) echo "steam" ;; lutris) echo "lutris" ;; wine) echo "wine" ;; gamemode) echo "gamemode" ;;
+                steam) echo "steam" ;; lutris) echo "lutris" ;; wine) echo="wine" ;; gamemode) echo "gamemode" ;;
             esac ;;
         arch)
             case "$key" in
@@ -116,7 +116,7 @@ pkgname() {
                 vbox) echo "virtualbox-guest-utils" ;;
                 qtwayland) echo "qt6-wayland" ;; xwayland) echo "xorg-xwayland" ;;
                 firefox) echo "firefox" ;; chromium) echo "chromium" ;; tor) echo "torbrowser-launcher" ;;
-                vlc) echo "vlc" ;; mpv) echo "mpv" ;; gimp) echo "gimp" ;; blender) echo "blender" ;;
+                vlc) echo "vlc" ;; mpv) echo "mpv" ;; gimp) echo="gimp" ;; blender) echo "blender" ;;
                 obs) echo "obs-studio" ;; kdenlive) echo "kdenlive" ;; audacity) echo "audacity" ;;
                 libreoffice) echo "libreoffice-fresh" ;; telegram) echo "telegram-desktop" ;; discord) echo "discord" ;;
                 thunderbird) echo "thunderbird" ;;
@@ -124,13 +124,12 @@ pkgname() {
                 neovim) echo "neovim" ;; docker) echo "docker" ;; python3) echo "python" ;;
                 btop) echo "btop" ;; tmux) echo "tmux" ;; ranger) echo "ranger" ;; flatpak) echo "flatpak" ;;
                 build_tools) echo "base-devel" ;;
-                steam) echo "steam" ;; lutris) echo "lutris" ;; wine) echo "wine" ;; gamemode) echo "gamemode" ;;
+                steam) echo "steam" ;; lutris) echo "lutris" ;; wine) echo="wine" ;; gamemode) echo "gamemode" ;;
             esac ;;
         debian)
             case "$key" in
                 kde) echo "kde-plasma-desktop" ;; gnome) echo "gnome-core" ;; xfce) echo "xfce4" ;;
                 lxqt) echo "lxqt" ;; mate) echo "mate-desktop-environment" ;; cinnamon) echo "cinnamon-desktop-environment" ;;
-                # Hyprland nie jest w domyślnych repozytoriach Debiana/Ubuntu
                 hyprland) echo "" ;;
                 sddm) echo "sddm" ;; gdm) echo "gdm3" ;; lightdm) echo "lightdm lightdm-gtk-greeter" ;;
                 dbus) echo "dbus" ;; elogind) echo "" ;; mesa) echo "libgl1-mesa-dri" ;;
@@ -138,7 +137,7 @@ pkgname() {
                 vbox) echo "virtualbox-guest-x11 virtualbox-guest-utils" ;;
                 qtwayland) echo "qt6-wayland" ;; xwayland) echo "xwayland" ;;
                 firefox) echo "firefox-esr" ;; chromium) echo "chromium" ;; tor) echo "torbrowser-launcher" ;;
-                vlc) echo "vlc" ;; mpv) echo "mpv" ;; gimp) echo "gimp" ;; blender) echo "blender" ;;
+                vlc) echo "vlc" ;; mpv) echo "mpv" ;; gimp) echo="gimp" ;; blender) echo "blender" ;;
                 obs) echo "obs-studio" ;; kdenlive) echo "kdenlive" ;; audacity) echo "audacity" ;;
                 libreoffice) echo "libreoffice" ;; telegram) echo "telegram-desktop" ;; discord) echo "discord" ;;
                 thunderbird) echo "thunderbird" ;;
@@ -146,7 +145,7 @@ pkgname() {
                 neovim) echo "neovim" ;; docker) echo "docker.io" ;; python3) echo "python3" ;;
                 btop) echo "btop" ;; tmux) echo "tmux" ;; ranger) echo "ranger" ;; flatpak) echo "flatpak" ;;
                 build_tools) echo "build-essential" ;;
-                steam) echo "steam" ;; lutris) echo "lutris" ;; wine) echo "wine" ;; gamemode) echo "gamemode" ;;
+                steam) echo "steam" ;; lutris) echo "lutris" ;; wine) echo="wine" ;; gamemode) echo "gamemode" ;;
             esac ;;
         fedora)
             case "$key" in
@@ -159,7 +158,7 @@ pkgname() {
                 vbox) echo "virtualbox-guest-additions" ;;
                 qtwayland) echo "qt6-qtwayland" ;; xwayland) echo "xorg-x11-server-Xwayland" ;;
                 firefox) echo "firefox" ;; chromium) echo "chromium" ;; tor) echo "torbrowser-launcher" ;;
-                vlc) echo "vlc" ;; mpv) echo "mpv" ;; gimp) echo "gimp" ;; blender) echo "blender" ;;
+                vlc) echo "vlc" ;; mpv) echo "mpv" ;; gimp) echo="gimp" ;; blender) echo "blender" ;;
                 obs) echo "obs-studio" ;; kdenlive) echo "kdenlive" ;; audacity) echo "audacity" ;;
                 libreoffice) echo "libreoffice" ;; telegram) echo "telegram-desktop" ;; discord) echo "discord" ;;
                 thunderbird) echo "thunderbird" ;;
@@ -167,7 +166,7 @@ pkgname() {
                 neovim) echo "neovim" ;; docker) echo "docker" ;; python3) echo "python3" ;;
                 btop) echo "btop" ;; tmux) echo "tmux" ;; ranger) echo "ranger" ;; flatpak) echo "flatpak" ;;
                 build_tools) echo "@development-tools" ;;
-                steam) echo "steam" ;; lutris) echo "lutris" ;; wine) echo "wine" ;; gamemode) echo "gamemode" ;;
+                steam) echo "steam" ;; lutris) echo "lutris" ;; wine) echo="wine" ;; gamemode) echo "gamemode" ;;
             esac ;;
     esac
 }
@@ -187,7 +186,6 @@ pkg_bootstrap() {
 pkg_sync() {
     case "$DISTRO_FAMILY" in
         void) 
-            # Włączenie repozytoriów nonfree i multilib dla Void (wymagane dla steam, discord, niektórych sterowników)
             xbps-install -Sy void-repo-nonfree void-repo-multilib void-repo-nonfree-multilib >/dev/null 2>&1
             xbps-install -Sy 
             ;;
@@ -200,20 +198,28 @@ pkg_sync() {
 pkg_install() {
     case "$DISTRO_FAMILY" in
         void) 
-            # Void przerywa instalację całej listy jeśli jeden pakiet już jest zainstalowany lub nie istnieje.
-            # Instalujemy w pętli, aby zignorować te błędy i zainstalować resztę.
             for p in "$@"; do
-                xbps-install -y "$p" >/dev/null 2>&1
+                xbps-install -y "$p"
             done
             ;;
-        arch) pacman -S --noconfirm --needed "$@" >/dev/null 2>&1 ;;
-        debian) DEBIAN_FRONTEND=noninteractive apt-get install -y "$@" >/dev/null 2>&1 ;;
-        fedora) dnf install -y "$@" >/dev/null 2>&1 ;;
+        arch) pacman -S --noconfirm --needed "$@" ;;
+        debian) DEBIAN_FRONTEND=noninteractive apt-get install -y "$@" ;;
+        fedora) dnf install -y "$@" ;;
+    esac
+}
+
+pkg_remove() {
+    case "$DISTRO_FAMILY" in
+        void) xbps-remove -R -y "$@" ;;
+        arch) pacman -Rns --noconfirm "$@" ;;
+        debian) DEBIAN_FRONTEND=noninteractive apt-get purge -y "$@" ;;
+        fedora) dnf remove -y "$@" ;;
     esac
 }
 
 pkg_is_installed() {
     local pkg="$1"
+    [ -z "$pkg" ] && return 1
     case "$DISTRO_FAMILY" in
         void) xbps-query -l 2>/dev/null | grep -q " $pkg-" ;;
         arch) pacman -Qi "$pkg" >/dev/null 2>&1 ;;
@@ -230,12 +236,42 @@ service_enable() {
     esac
 }
 
+service_disable() {
+    local svc="$1"
+    case "$INIT_SYSTEM" in
+        runit) rm -f /var/service/$svc 2>/dev/null ;;
+        systemd) systemctl disable "$svc" >/dev/null 2>&1 ;;
+    esac
+}
+
 service_is_enabled() {
     local svc="$1"
     case "$INIT_SYSTEM" in
         runit) [ -L "/var/service/$svc" ] ;;
         systemd) systemctl is-enabled "$svc" >/dev/null 2>&1 ;;
     esac
+}
+
+# Funkcja wyświetlająca podgląd na żywo z polecenia
+run_with_live_output() {
+    local MSG="$1"; shift
+    > "$TMPFILE"
+    (
+        "$@" > "$TMPFILE" 2>&1
+        echo $? > "$EXITCODE_FILE"
+    ) &
+    local CMD_PID=$!
+    
+    sleep 0.5
+    dialog --backtitle "$BACKTITLE" --title " $MSG " --tailbox "$TMPFILE" 22 75 &
+    local DLG_PID=$!
+    
+    wait $CMD_PID
+    sleep 1
+    kill $DLG_PID 2>/dev/null
+    wait $DLG_PID 2>/dev/null
+    
+    LAST_EXIT_CODE=$(cat "$EXITCODE_FILE" 2>/dev/null || echo 1)
 }
 
 run_with_gauge() {
@@ -268,6 +304,11 @@ show_error_log() {
 # ============================================================
 #  START SKRYPTU
 # ============================================================
+UNINSTALL_MODE=0
+if [ "$1" == "-uninstall" ] || [ "$1" == "--uninstall" ]; then
+    UNINSTALL_MODE=1
+fi
+
 pkg_bootstrap
 
 if command -v dialog >/dev/null 2>&1; then
@@ -288,6 +329,65 @@ if [ "$DISTRO_FAMILY" == "unknown" ]; then
     clear; exit 1
 fi
 
+# ============================================================
+#  TRYB DEINSTALACJI / UNINSTALL MODE
+# ============================================================
+if [ "$UNINSTALL_MODE" -eq 1 ]; then
+    declare -A DE_MAP
+    DE_MAP[kde]="KDE Plasma"
+    DE_MAP[gnome]="GNOME"
+    DE_MAP[xfce]="XFCE"
+    DE_MAP[lxqt]="LXQt"
+    DE_MAP[mate]="MATE"
+    DE_MAP[cinnamon]="Cinnamon"
+    DE_MAP[hyprland]="Hyprland"
+    
+    declare -A DM_MAP
+    DM_MAP[kde]="sddm"; DM_MAP[gnome]="gdm"; DM_MAP[xfce]="lightdm"
+    DM_MAP[lxqt]="sddm"; DM_MAP[mate]="lightdm"; DM_MAP[cinnamon]="lightdm"; DM_MAP[hyprland]="sddm"
+
+    args=()
+    count=0
+    for key in "${!DE_MAP[@]}"; do
+        pkg1=$(pkgname "$key" | awk '{print $1}')
+        if [ -n "$pkg1" ] && pkg_is_installed "$pkg1"; then
+            args+=("$key" "${DE_MAP[$key]}")
+            count=$((count+1))
+        fi
+    done
+
+    if [ $count -eq 0 ]; then
+        dialog --backtitle "$BACKTITLE" --title " $(t 'Brak środowisk' 'No environments') " \
+            --msgbox "\n$(t 'Nie znaleziono zainstalowanych środowisk graficznych obsługiwanych przez ten skrypt.' 'No supported desktop environments found installed.')" 10 50
+        clear; exit 0
+    fi
+
+    CHOICE=$(dialog --backtitle "$BACKTITLE" --title " $(t 'Odinstaluj środowisko' 'Uninstall Desktop') " \
+        --menu "\n$(t 'Wybierz środowisko do odinstalowania:' 'Select environment to uninstall:')" 15 60 $count \
+        "${args[@]}" 3>&1 1>&2 2>&3)
+        
+    [ -z "$CHOICE" ] && { clear; exit 0; }
+
+    DM_CHOICE="${DM_MAP[$CHOICE]}"
+    PKGS_TO_REMOVE=$(pkgname "$CHOICE")
+    [ -n "$DM_CHOICE" ] && PKGS_TO_REMOVE="$PKGS_TO_REMOVE $(pkgname $DM_CHOICE)"
+
+    dialog --backtitle "$BACKTITLE" --title " $(t 'Potwierdzenie' 'Confirmation') " \
+        --yesno "\n$(t "Czy na pewno chcesz usunąć" "Are you sure you want to remove") ${DE_MAP[$CHOICE]} $(t "oraz menedżer logowania" "and the display manager") $DM_CHOICE?\n\n$(t "Uwaga: Usunięcie środowiska graficznego może spowodować usunięcie współdzielonych zależności." "Warning: Removing the desktop environment might remove shared dependencies.")" 12 65
+    
+    if [ $? -eq 0 ]; then
+        service_disable "$DM_CHOICE"
+        run_with_live_output "$(t 'Odinstalowanie pakietów...' 'Uninstalling packages...')" bash -c "$(declare -f pkg_remove); pkg_remove $PKGS_TO_REMOVE"
+        
+        dialog --backtitle "$BACKTITLE" --title " $(t 'Sukces' 'Success') " \
+            --msgbox "\n$(t "Środowisko zostało odinstalowane. Zalecany jest restart systemu." "Environment has been uninstalled. A system reboot is recommended.")" 10 50
+    fi
+    clear; exit 0
+fi
+
+# ============================================================
+#  TRYB INSTALACJI / INSTALL MODE
+# ============================================================
 dialog --backtitle "$BACKTITLE" --title " $(t 'Witamy' 'Welcome') " \
     --msgbox "\n$(t "Ten kreator zainstaluje środowisko graficzne na Twoim systemie." "This wizard will install a desktop environment on your system.")\n\n$(t 'Wykryty system' 'Detected system'): $DISTRO_NAME\n$(t 'Wersja skryptu' 'Script version'): $SCRIPT_VERSION\n\n$(t "Użyj strzałek i TAB do nawigacji, ENTER aby zatwierdzić." "Use arrows and TAB to navigate, ENTER to confirm.")" 14 65
 
@@ -298,7 +398,7 @@ if [ "$LAST_EXIT_CODE" -ne 0 ]; then
     if [ $? -ne 0 ]; then clear; echo "$(t 'Przerwano: brak internetu.' 'Aborted: no internet.')"; exit 1; fi
 fi
 
-run_with_gauge "$(t 'Synchronizacja bazy pakietów...' 'Syncing package database...')" bash -c "$(declare -f pkg_sync); pkg_sync"
+run_with_live_output "$(t 'Synchronizacja bazy pakietów...' 'Syncing package database...')" bash -c "$(declare -f pkg_sync); pkg_sync"
 if [ "$LAST_EXIT_CODE" -ne 0 ]; then
     show_error_log " $(t 'Błąd synchronizacji' 'Sync error') "
     dialog --backtitle "$BACKTITLE" --title " $(t 'Błąd' 'Error') " \
@@ -333,7 +433,6 @@ case "$DE_CHOICE" in
     7) DE_KEY="hyprland"; DM_KEY="sddm"; DE_LABEL="Hyprland" ;;
 esac
 
-# Sprawdzenie dostępności Hyprlanda na danym systemie
 if [ "$DE_KEY" == "hyprland" ] && [ -z "$(pkgname hyprland)" ]; then
     dialog --backtitle "$BACKTITLE" --title " $(t 'Niedostępne' 'Unavailable') " \
         --msgbox "\n$(t "Hyprland nie jest dostępny w domyślnych repozytoriach tego systemu ($DISTRO_NAME).\nMożesz go zainstalować ręcznie z AUR lub źródeł." "Hyprland is not available in the default repositories of this system ($DISTRO_NAME).\nYou can install it manually from AUR or sources.")" 12 65
@@ -354,7 +453,6 @@ for K in mesa xorgfonts xorgminimal dbus elogind vbox; do add_pkg "$K"; done
 # --- Wybor serwera wyswietlania ---
 DISPLAY_LABEL="X11 (Xorg)"
 if [ "$DE_KEY" == "hyprland" ]; then
-    # Hyprland to czysty Wayland - nie pytamy o X11
     add_pkg "qtwayland"
     add_pkg "xwayland"
     DISPLAY_LABEL="Wayland"
@@ -461,10 +559,9 @@ dialog --backtitle "$BACKTITLE" --title " $(t 'Podsumowanie' 'Summary') " \
 
 if [ $? -ne 0 ]; then clear; echo "$(t 'Anulowano.' 'Cancelled.')"; exit 1; fi
 
-run_with_gauge "$(t 'Instalowanie pakietów, proszę czekać...' 'Installing packages, please wait...')" bash -c "$(declare -f pkg_install); pkg_install $PACKAGES"
+run_with_live_output "$(t 'Instalowanie pakietów, proszę czekać...' 'Installing packages, please wait...')" bash -c "$(declare -f pkg_install); pkg_install $PACKAGES"
 
 # Ponieważ Void instaluje w pętli i zawsze zwraca 0, liczymy na weryfikację niżej.
-# Dla Arch/Deb/Fedora sprawdzamy kod błędu:
 if [ "$DISTRO_FAMILY" != "void" ] && [ "$LAST_EXIT_CODE" -ne 0 ]; then
     show_error_log " $(t 'Błąd instalacji' 'Installation error') "
     dialog --backtitle "$BACKTITLE" --title " $(t 'Błąd' 'Error') " \
@@ -484,7 +581,7 @@ if [ -n "$MISSING" ]; then
     clear; exit 1
 fi
 
-run_with_gauge "$(t 'Konfiguracja usług systemowych...' 'Configuring system services...')" bash -c "
+run_with_live_output "$(t 'Konfiguracja usług systemowych...' 'Configuring system services...')" bash -c "
     $(declare -f service_enable)
     mkdir -p /var/service 2>/dev/null
     service_enable dbus
@@ -512,7 +609,6 @@ if [ "$DE_KEY" == "hyprland" ]; then
 
     if [ $? -eq 0 ]; then
         install_hypr_dots() {
-            # Wymuszamy instalację git, jeśli nie został wybrany w menu
             if ! pkg_is_installed git; then
                 pkg_install git >/dev/null 2>&1
             fi
@@ -521,17 +617,14 @@ if [ "$DE_KEY" == "hyprland" ]; then
             TARGET_HOME=$(getent passwd "$TARGET_USER" | cut -d: -f6)
             TMP_DOTFILES=$(mktemp -d)
 
-            # Klonowanie repozytorium
             if git clone --depth 1 https://github.com/caelestia-dots/shell.git "$TMP_DOTFILES" 2>&1; then
                 cd "$TMP_DOTFILES" || return 1
                 
-                # Caelestia-dots zazwyczaj posiada skrypt instalacyjny
                 if [ -f "install.sh" ]; then
                     sudo -u "$TARGET_USER" bash install.sh 2>&1
                 elif [ -f "setup.sh" ]; then
                     sudo -u "$TARGET_USER" bash setup.sh 2>&1
                 else
-                    # Awaryjne kopiowanie .config jeśli brak skryptu
                     mkdir -p "$TARGET_HOME/.config"
                     if [ -d "config" ]; then
                         sudo -u "$TARGET_USER" cp -r config/* "$TARGET_HOME/.config/" 2>&1
@@ -547,7 +640,7 @@ if [ "$DE_KEY" == "hyprland" ]; then
             fi
         }
 
-        run_with_gauge "$(t 'Pobieranie i instalacja konfiguracji Hyprland...' 'Downloading and installing Hyprland configuration...')" bash -c "$(declare -f install_hypr_dots); $(declare -f pkg_is_installed); $(declare -f pkg_install); install_hypr_dots"
+        run_with_live_output "$(t 'Pobieranie i instalacja konfiguracji Hyprland...' 'Downloading and installing Hyprland configuration...')" bash -c "$(declare -f install_hypr_dots); $(declare -f pkg_is_installed); $(declare -f pkg_install); install_hypr_dots"
         
         if [ "$LAST_EXIT_CODE" -ne 0 ]; then
             show_error_log " $(t 'Błąd konfiguracji Hyprland' 'Hyprland config error') "
