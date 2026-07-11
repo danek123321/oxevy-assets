@@ -1,4 +1,3 @@
-
 #!/bin/bash
 #
 # Uniwersalny instalator / deinstalator Środowisk Graficznych (Void / Arch / Debian-Ubuntu / Fedora)
