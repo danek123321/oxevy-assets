@@ -1,7 +1,12 @@
+Oto zaktualizowana wersja skryptu. Dodałem logikę, która po wybraniu i zainstalowaniu środowiska **Hyprland** pyta użytkownika, czy chce pobrać i zastosować konfigurację (dots) z repozytorium `caelestia-dots/shell`. 
+
+Jeśli użytkownik się zgodzi, skrypt automatycznie zainstaluje `git` (jeśli go brakuje), sklonuje repozytorium i spróbuje uruchomić dołączony do niego skrypt instalacyjny jako docelowy użytkownik (twórca repozytorium zazwyczaj udostępnia automatyczny skrypt `setup.sh` lub `install.sh`).
+
+```bash
 #!/bin/bash
 #
 # Uniwersalny instalator Środowisk Graficznych (Void / Arch / Debian-Ubuntu / Fedora)
-# Wsparcie: KDE Plasma, GNOME, XFCE, LXQt, MATE, Cinnamon
+# Wsparcie: KDE Plasma, GNOME, XFCE, LXQt, MATE, Cinnamon, Hyprland
 # Stylizowany na archinstall (dialog/ncurses)
 # Obsluga jezykow: polski / english
 #
@@ -9,7 +14,7 @@
 # ============================================================
 #  KONFIGURACJA SAMO-AKTUALIZACJI / SELF-UPDATE CONFIG
 # ============================================================
-SCRIPT_VERSION="4.0.0"
+SCRIPT_VERSION="4.2.0"
 SCRIPT_URL="https://raw.githubusercontent.com/TWOJ-USER/TWOJE-REPO/main/desktop-installer.sh"
 SCRIPT_PATH="$(readlink -f "$0")"
 
@@ -75,6 +80,7 @@ pkgname() {
             case "$key" in
                 kde) echo "kde-plasma kde-baseapps" ;; gnome) echo "gnome" ;; xfce) echo "xfce4 xfce4-goodies" ;;
                 lxqt) echo "lxqt" ;; mate) echo "mate" ;; cinnamon) echo "cinnamon" ;;
+                hyprland) echo "hyprland kitty waybar wofi" ;;
                 sddm) echo "sddm" ;; gdm) echo "gdm" ;; lightdm) echo "lightdm lightdm-gtk3-greeter" ;;
                 dbus) echo "dbus" ;; elogind) echo "elogind" ;; mesa) echo "mesa-dri" ;;
                 xorgfonts) echo "xorg-fonts" ;; xorgminimal) echo "xorg-minimal" ;; xorgfull) echo "xorg" ;;
@@ -95,6 +101,7 @@ pkgname() {
             case "$key" in
                 kde) echo "plasma-desktop plasma-workspace" ;; gnome) echo "gnome gnome-tweaks" ;; xfce) echo "xfce4" ;;
                 lxqt) echo "lxqt" ;; mate) echo "mate mate-extra" ;; cinnamon) echo "cinnamon" ;;
+                hyprland) echo "hyprland kitty waybar wofi" ;;
                 sddm) echo "sddm" ;; gdm) echo "gdm" ;; lightdm) echo "lightdm lightdm-gtk-greeter" ;;
                 dbus) echo "dbus" ;; elogind) echo "" ;; mesa) echo "mesa" ;;
                 xorgfonts) echo "xorg-fonts-misc" ;; xorgminimal) echo "xorg-server" ;; xorgfull) echo "xorg-server xorg-apps xorg-xinit" ;;
@@ -115,6 +122,7 @@ pkgname() {
             case "$key" in
                 kde) echo "kde-plasma-desktop" ;; gnome) echo "gnome-core" ;; xfce) echo "xfce4" ;;
                 lxqt) echo "lxqt" ;; mate) echo "mate-desktop-environment" ;; cinnamon) echo "cinnamon-desktop-environment" ;;
+                hyprland) echo "hyprland kitty waybar wofi" ;;
                 sddm) echo "sddm" ;; gdm) echo "gdm3" ;; lightdm) echo "lightdm lightdm-gtk-greeter" ;;
                 dbus) echo "dbus" ;; elogind) echo "" ;; mesa) echo "libgl1-mesa-dri" ;;
                 xorgfonts) echo "xfonts-base" ;; xorgminimal) echo "xserver-xorg-core" ;; xorgfull) echo "xserver-xorg" ;;
@@ -135,6 +143,7 @@ pkgname() {
             case "$key" in
                 kde) echo "@kde-desktop-environment" ;; gnome) echo "@gnome-desktop-environment" ;; xfce) echo "@xfce-desktop-environment" ;;
                 lxqt) echo "@lxqt-desktop-environment" ;; mate) echo "@mate-desktop-environment" ;; cinnamon) echo "@cinnamon-desktop-environment" ;;
+                hyprland) echo "hyprland kitty waybar wofi" ;;
                 sddm) echo "sddm" ;; gdm) echo "gdm" ;; lightdm) echo "lightdm lightdm-gtk-greeter" ;;
                 dbus) echo "dbus-broker" ;; elogind) echo "" ;; mesa) echo "mesa-dri-drivers" ;;
                 xorgfonts) echo "xorg-x11-fonts-base" ;; xorgminimal) echo "xorg-x11-server-Xorg" ;; xorgfull) echo "xorg-x11-server-Xorg xorg-x11-drv-libinput" ;;
@@ -277,8 +286,15 @@ fi
 #  WYBÓR ŚRODOWISKA
 # ============================================================
 DE_CHOICE=$(dialog --backtitle "$BACKTITLE" --title " $(t 'Środowisko graficzne' 'Desktop environment') " \
-    --menu "\n$(t 'Wybierz środowisko graficzne do instalacji:' 'Choose desktop environment to install:')" 18 65 6 \
-    "1" "KDE Plasma" "2" "GNOME" "3" "XFCE" "4" "LXQt" "5" "MATE" "6" "Cinnamon" 3>&1 1>&2 2>&3)
+    --menu "\n$(t 'Wybierz środowisko graficzne do instalacji:' 'Choose desktop environment to install:')" 19 65 7 \
+    "1" "KDE Plasma" \
+    "2" "GNOME" \
+    "3" "XFCE" \
+    "4" "LXQt" \
+    "5" "MATE" \
+    "6" "Cinnamon" \
+    "7" "Hyprland (Wayland)" \
+    3>&1 1>&2 2>&3)
 
 if [ -z "$DE_CHOICE" ]; then clear; echo "$(t 'Anulowano.' 'Cancelled.')"; exit 1; fi
 
@@ -290,6 +306,7 @@ case "$DE_CHOICE" in
     4) DE_KEY="lxqt"; DM_KEY="sddm"; DE_LABEL="LXQt" ;;
     5) DE_KEY="mate"; DM_KEY="lightdm"; DE_LABEL="MATE" ;;
     6) DE_KEY="cinnamon"; DM_KEY="lightdm"; DE_LABEL="Cinnamon" ;;
+    7) DE_KEY="hyprland"; DM_KEY="sddm"; DE_LABEL="Hyprland" ;;
 esac
 
 # ============================================================
@@ -303,8 +320,14 @@ add_pkg() {
 
 for K in mesa xorgfonts xorgminimal dbus elogind vbox; do add_pkg "$K"; done
 
+# --- Wybor serwera wyswietlania ---
 DISPLAY_LABEL="X11 (Xorg)"
-if [ "$DE_KEY" == "kde" ] || [ "$DE_KEY" == "gnome" ]; then
+if [ "$DE_KEY" == "hyprland" ]; then
+    # Hyprland to czysty Wayland - nie pytamy o X11
+    add_pkg "qtwayland"
+    add_pkg "xwayland"
+    DISPLAY_LABEL="Wayland"
+elif [ "$DE_KEY" == "kde" ] || [ "$DE_KEY" == "gnome" ]; then
     DISPLAY_CHOICE=$(dialog --backtitle "$BACKTITLE" --title " $(t 'Serwer wyświetlania' 'Display server') " \
         --menu "\n$(t 'Wybierz serwer graficzny:' 'Choose your display server:')" 14 65 2 \
         "1" "$(t 'Wayland (nowoczesny)' 'Wayland (modern)')" "2" "$(t 'X11 / Xorg (tradycyjny)' 'X11 / Xorg (traditional)')" 3>&1 1>&2 2>&3)
@@ -323,7 +346,7 @@ fi
 add_pkg "$DE_KEY"
 add_pkg "$DM_KEY"
 
-# --- System stanu zaznaczonych aplikacji (na wzór archinstall) ---
+# --- System stanu zaznaczonych aplikacji ---
 declare -A APP_STATE
 
 show_app_menu() {
@@ -447,6 +470,63 @@ if [ -n "$SERVICE_MISSING" ]; then
         --msgbox "\n$(t "Nie udało się włączyć:" "Failed to enable:")\n$SERVICE_MISSING\n\n$(t "Włącz ręcznie po restarcie." "Enable manually after reboot.")" 12 65
 fi
 
+# ============================================================
+#  KONFIGURACJA HYPRLAND (CAELESTIA-DOTS)
+# ============================================================
+if [ "$DE_KEY" == "hyprland" ]; then
+    dialog --backtitle "$BACKTITLE" --title " $(t 'Konfiguracja Hyprland' 'Hyprland Configuration') " \
+        --yesno "\n$(t "Czy chcesz automatycznie pobrać i zainstalować konfigurację (dots) z repozytorium:" "Do you want to automatically download and install the configuration (dots) from the repository:")\n\ngithub.com/caelestia-dots/shell\n\n$(t "Wymaga to połączenia z internetem i zainstalowanego git." "This requires internet connection and git installed.")" 13 70
+
+    if [ $? -eq 0 ]; then
+        install_hypr_dots() {
+            # Wymuszamy instalację git, jeśli nie został wybrany w menu
+            if ! pkg_is_installed git; then
+                pkg_install git >/dev/null 2>&1
+            fi
+
+            TARGET_USER=${SUDO_USER:-$USER}
+            TARGET_HOME=$(getent passwd "$TARGET_USER" | cut -d: -f6)
+            TMP_DOTFILES=$(mktemp -d)
+
+            # Klonowanie repozytorium
+            if git clone --depth 1 https://github.com/caelestia-dots/shell.git "$TMP_DOTFILES" 2>&1; then
+                cd "$TMP_DOTFILES" || return 1
+                
+                # Caelestia-dots zazwyczaj posiada skrypt instalacyjny
+                if [ -f "install.sh" ]; then
+                    sudo -u "$TARGET_USER" bash install.sh 2>&1
+                elif [ -f "setup.sh" ]; then
+                    sudo -u "$TARGET_USER" bash setup.sh 2>&1
+                else
+                    # Awaryjne kopiowanie .config jeśli brak skryptu
+                    mkdir -p "$TARGET_HOME/.config"
+                    if [ -d "config" ]; then
+                        sudo -u "$TARGET_USER" cp -r config/* "$TARGET_HOME/.config/" 2>&1
+                    elif [ -d ".config" ]; then
+                        sudo -u "$TARGET_USER" cp -r .config/* "$TARGET_HOME/.config/" 2>&1
+                    fi
+                fi
+                cd - || return 1
+                rm -rf "$TMP_DOTFILES"
+                return 0
+            else
+                return 1
+            fi
+        }
+
+        run_with_gauge "$(t 'Pobieranie i instalacja konfiguracji Hyprland...' 'Downloading and installing Hyprland configuration...')" bash -c "$(declare -f install_hypr_dots); $(declare -f pkg_is_installed); $(declare -f pkg_install); install_hypr_dots"
+        
+        if [ "$LAST_EXIT_CODE" -ne 0 ]; then
+            show_error_log " $(t 'Błąd konfiguracji Hyprland' 'Hyprland config error') "
+            dialog --backtitle "$BACKTITLE" --title " $(t 'Uwaga' 'Notice') " \
+                --msgbox "\n$(t "Nie udało się w pełni zainstalować konfiguracji. Sprawdź log błędów. Możesz to zrobić ręcznie po restarcie." "Failed to fully install the configuration. Check the error log. You can do this manually after reboot.")" 12 65
+        fi
+    fi
+fi
+
+# ============================================================
+#  EKRAN KOŃCOWY
+# ============================================================
 SESSION_INFO="$DE_LABEL (X11)"
 [ "$DISPLAY_LABEL" == "Wayland" ] && SESSION_INFO="$DE_LABEL (Wayland)"
 
@@ -458,3 +538,4 @@ fastfetch 2>/dev/null || true
 echo "$(t 'Restart za 5 sekund...' 'Rebooting in 5 seconds...')"
 sleep 5
 reboot
+```
